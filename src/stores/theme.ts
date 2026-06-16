@@ -1,0 +1,96 @@
+import { defineStore } from 'pinia'
+import type { ThemeName, ThemeColors } from '@/types'
+
+const themeMap: Record<ThemeName, ThemeColors> = {
+  light: {
+    canvasBg: '#f8f9fa',
+    panelBg: '#ffffff',
+    panelBorder: '#e2e8f0',
+    textPrimary: '#1a1a2e',
+    textSecondary: '#64748b',
+    accent: '#0066ff',
+    accentHover: '#0052cc',
+    danger: '#ef4444',
+    gridDot: '#cbd5e1',
+    nodeShadow: 'rgba(0,0,0,0.1)',
+    selectionGlow: 'rgba(0,102,255,0.4)',
+    miniMapBg: 'rgba(255,255,255,0.9)',
+    miniMapViewport: 'rgba(0,102,255,0.3)',
+    toolbarBg: '#ffffff',
+    toolbarHover: '#f1f5f9',
+    inputBg: '#f8fafc',
+    inputBorder: '#e2e8f0',
+  },
+  dark: {
+    canvasBg: '#1e1e2e',
+    panelBg: '#2a2a3e',
+    panelBorder: '#3a3a4e',
+    textPrimary: '#e0e0e0',
+    textSecondary: '#a0a0b0',
+    accent: '#00d4aa',
+    accentHover: '#00b894',
+    danger: '#ff6b35',
+    gridDot: '#3a3a4e',
+    nodeShadow: 'rgba(0,0,0,0.3)',
+    selectionGlow: 'rgba(0,212,170,0.4)',
+    miniMapBg: 'rgba(30,30,46,0.9)',
+    miniMapViewport: 'rgba(0,212,170,0.3)',
+    toolbarBg: '#2a2a3e',
+    toolbarHover: '#3a3a4e',
+    inputBg: '#1e1e2e',
+    inputBorder: '#3a3a4e',
+  },
+  print: {
+    canvasBg: '#ffffff',
+    panelBg: '#ffffff',
+    panelBorder: '#cccccc',
+    textPrimary: '#000000',
+    textSecondary: '#666666',
+    accent: '#333333',
+    accentHover: '#555555',
+    danger: '#cc0000',
+    gridDot: '#dddddd',
+    nodeShadow: 'none',
+    selectionGlow: 'rgba(0,0,0,0.2)',
+    miniMapBg: 'rgba(255,255,255,0.95)',
+    miniMapViewport: 'rgba(0,0,0,0.2)',
+    toolbarBg: '#ffffff',
+    toolbarHover: '#f0f0f0',
+    inputBg: '#ffffff',
+    inputBorder: '#cccccc',
+  },
+  ocean: {
+    canvasBg: '#0a1628',
+    panelBg: '#0f2035',
+    panelBorder: '#1a3a5c',
+    textPrimary: '#c0d8f0',
+    textSecondary: '#7aa3c8',
+    accent: '#00b4d8',
+    accentHover: '#0096b7',
+    danger: '#ff6b6b',
+    gridDot: '#1a3a5c',
+    nodeShadow: 'rgba(0,0,0,0.4)',
+    selectionGlow: 'rgba(0,180,216,0.4)',
+    miniMapBg: 'rgba(10,22,40,0.9)',
+    miniMapViewport: 'rgba(0,180,216,0.3)',
+    toolbarBg: '#0f2035',
+    toolbarHover: '#1a3a5c',
+    inputBg: '#0a1628',
+    inputBorder: '#1a3a5c',
+  },
+}
+
+export const useThemeStore = defineStore('theme', {
+  state: () => ({
+    currentTheme: 'dark' as ThemeName,
+  }),
+  getters: {
+    themeColors: (state) => themeMap[state.currentTheme],
+  },
+  actions: {
+    setTheme(theme: ThemeName) {
+      this.currentTheme = theme
+      localStorage.setItem('graph-editor-theme', theme)
+    },
+  },
+})
