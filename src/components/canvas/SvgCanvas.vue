@@ -52,24 +52,33 @@ function screenToCanvas(clientX: number, clientY: number) {
   }
 }
 
+function isHitOnElement(event: MouseEvent): boolean {
+  const target = event.target as Element | null
+  if (!target) return false
+  return !!target.closest('[data-node-root], [data-edge-root], [data-group-root]')
+}
+
 function onSvgClick(event: MouseEvent) {
+  if (isHitOnElement(event)) return
   handleCanvasClick(event)
   uiStore.hideContextMenu()
 }
 
 function onSvgDblClick(event: MouseEvent) {
+  if (isHitOnElement(event)) return
   const pos = screenToCanvas(event.clientX, event.clientY)
   uiStore.toggleNodeCreatePanel(pos.x, pos.y, event.clientX, event.clientY)
 }
 
 function onSvgContextMenu(event: MouseEvent) {
+  if (isHitOnElement(event)) return
   event.preventDefault()
   uiStore.showContextMenu(event.clientX, event.clientY, 'canvas', '')
 }
 
 function onSvgMouseDown(event: MouseEvent) {
   if (event.button !== 0) return
-  if (event.target !== svgRef.value && !(event.target as Element).classList.contains('canvas-bg')) return
+  if (isHitOnElement(event)) return
 
   onCanvasMouseDown(event)
 
@@ -249,6 +258,7 @@ onUnmounted(() => {
       width="100%"
       height="100%"
       fill="transparent"
+      pointer-events="none"
     />
   </svg>
   <MiniMap />

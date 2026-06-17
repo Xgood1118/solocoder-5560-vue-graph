@@ -1,6 +1,8 @@
 <template>
   <g
     class="edge-renderer"
+    data-edge-root="1"
+    @mousedown.stop
     @click.stop="onClick"
     @dblclick.stop="onDblClick"
     @contextmenu.prevent.stop="onContextMenu"

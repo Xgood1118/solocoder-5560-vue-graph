@@ -4,7 +4,8 @@ import { useGraphStore } from '@/stores/graph'
 import { useUiStore } from '@/stores/ui'
 import { useThemeStore } from '@/stores/theme'
 import { useKeyboard } from '@/composables/useKeyboard'
-import { saveDocument, loadDocument } from '@/utils/persistence'
+import { saveDocument, loadDocument, getCurrentDocumentId, saveCurrentDocumentId } from '@/utils/persistence'
+import { useHistoryStore } from '@/stores/history'
 import { applyThemeToDom } from '@/utils/themes'
 import TopBar from '@/components/toolbar/TopBar.vue'
 import Toolbar from '@/components/toolbar/Toolbar.vue'
@@ -22,6 +23,7 @@ import SearchBar from '@/components/panels/SearchBar.vue'
 const graphStore = useGraphStore()
 const uiStore = useUiStore()
 const themeStore = useThemeStore()
+const historyStore = useHistoryStore()
 
 useKeyboard()
 
@@ -47,12 +49,15 @@ onMounted(async () => {
   if (savedTheme) themeStore.setTheme(savedTheme as any)
   applyThemeToDom(themeStore.currentTheme)
 
+  historyStore.pauseRecording = true
+
   let loaded = false
-  const docId = localStorage.getItem('graph-editor-current-doc')
+  const docId = getCurrentDocumentId() || localStorage.getItem('graph-editor-current-doc')
   if (docId) {
     const doc = await loadDocument(docId)
-    if (doc && doc.nodes && doc.nodes.length > 0) {
+    if (doc && doc.id && Array.isArray(doc.nodes) && Array.isArray(doc.edges) && Array.isArray(doc.groups)) {
       graphStore.setDocument(doc)
+      saveCurrentDocumentId(doc.id)
       loaded = true
     }
   }
@@ -71,13 +76,16 @@ onMounted(async () => {
       updatedAt: Date.now(),
     }
     graphStore.setDocument(newDoc)
-    localStorage.setItem('graph-editor-current-doc', newDoc.id)
+    saveCurrentDocumentId(newDoc.id)
     saveDocument(newDoc)
   }
+
+  historyStore.clear()
+  historyStore.pauseRecording = false
 })
 
 watch(() => graphStore.document.id, (newId) => {
-  localStorage.setItem('graph-editor-current-doc', newId)
+  if (newId) saveCurrentDocumentId(newId)
 })
 </script>
 

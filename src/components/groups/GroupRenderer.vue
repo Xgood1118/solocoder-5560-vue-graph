@@ -51,7 +51,7 @@ function onContextMenu(e: MouseEvent) {
 </script>
 
 <template>
-  <g v-if="bbox" :transform="`translate(${bbox.x}, ${bbox.y})`">
+  <g v-if="bbox" :transform="`translate(${bbox.x}, ${bbox.y})`" data-group-root="1">
     <rect
       :width="bbox.width"
       :height="bbox.height"

@@ -32,8 +32,22 @@ function exportJSON() {
 function exportSVG() {
   const svgEl = document.querySelector('.absolute.inset-0 svg') as SVGSVGElement | null
   if (!svgEl) return
+  const cloned = svgEl.cloneNode(true) as SVGSVGElement
+  if (!cloned.getAttribute('xmlns')) cloned.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
+  if (!cloned.getAttribute('xmlns:xlink')) cloned.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink')
+  try {
+    const docData = JSON.parse(JSON.stringify(graphStore.document))
+    const base64 = btoa(unescape(encodeURIComponent(JSON.stringify(docData))))
+    const metadataNs = document.createElementNS('http://www.w3.org/2000/svg', 'metadata')
+    const graphData = document.createElementNS('http://www.w3.org/2000/svg', 'graph-data')
+    graphData.setAttribute('xmlns', 'graph-editor:v1')
+    graphData.setAttribute('format', 'json')
+    graphData.textContent = base64
+    metadataNs.appendChild(graphData)
+    cloned.insertBefore(metadataNs, cloned.firstChild)
+  } catch {}
   const serializer = new XMLSerializer()
-  const svgStr = serializer.serializeToString(svgEl)
+  const svgStr = serializer.serializeToString(cloned)
   const svgWithXml = `<?xml version="1.0" encoding="UTF-8"?>\n${svgStr}`
   download(`${graphStore.document.name}.svg`, svgWithXml, 'image/svg+xml')
   close()

@@ -50,10 +50,12 @@ const labelOffset = computed(() => {
 })
 
 function onMouseDown(event: MouseEvent) {
+  event.stopPropagation()
   onNodeMouseDown(event, props.node.id)
 }
 
 function onClick(event: MouseEvent) {
+  event.stopPropagation()
   handleNodeClick(event, props.node.id)
 }
 
@@ -63,17 +65,20 @@ function onContextMenu(event: MouseEvent) {
   uiStore.showContextMenu(event.clientX, event.clientY, 'node', props.node.id)
 }
 
-function onMouseEnter() {
+function onMouseEnter(event: MouseEvent) {
+  event.stopPropagation()
   uiStore.setHoveredNode(props.node.id)
 }
 
-function onMouseLeave() {
+function onMouseLeave(event: MouseEvent) {
+  event.stopPropagation()
   if (uiStore.hoveredNodeId === props.node.id) {
     uiStore.setHoveredNode(null)
   }
 }
 
-function onHandleMouseUp(handleId: string) {
+function onHandleMouseUp(event: MouseEvent, handleId: string) {
+  event.stopPropagation()
   if (isConnecting.value && connectionStart.value) {
     endConnection(props.node.id, handleId)
   }
@@ -81,7 +86,17 @@ function onHandleMouseUp(handleId: string) {
 </script>
 
 <template>
-  <g :transform="`translate(${node.x}, ${node.y})`">
+  <g
+    :transform="`translate(${node.x}, ${node.y})`"
+    data-node-root="1"
+    class="node-root"
+    style="cursor: move"
+    @mousedown="onMouseDown"
+    @click="onClick"
+    @contextmenu="onContextMenu"
+    @mouseenter="onMouseEnter"
+    @mouseleave="onMouseLeave"
+  >
     <defs>
       <filter :id="filterId" x="-50%" y="-50%" width="200%" height="200%">
         <feGaussianBlur in="SourceAlpha" stdDeviation="4" result="blur" />
@@ -98,20 +113,15 @@ function onHandleMouseUp(handleId: string) {
     </defs>
     <path
       :d="shapePath"
+      data-node-path="1"
       :fill="node.style.fillColor"
       :stroke="node.style.strokeColor"
       :stroke-width="node.style.strokeWidth"
       :filter="isSelected ? `url(#${filterId})` : undefined"
-      style="cursor: move"
-      @mousedown="onMouseDown"
-      @click="onClick"
-      @contextmenu="onContextMenu"
-      @mouseenter="onMouseEnter"
-      @mouseleave="onMouseLeave"
-      @mouseup="onHandleMouseUp(handles[0]?.id ?? '')"
+      pointer-events="fill"
     />
 
-    <g v-if="hasIcon" :clip-path="`url(#${clipPathId})`">
+    <g v-if="hasIcon" :clip-path="`url(#${clipPathId})`" pointer-events="none">
       <foreignObject
         v-if="iconComponent"
         :x="node.width / 2 - iconSize / 2"
@@ -119,7 +129,7 @@ function onHandleMouseUp(handleId: string) {
         :width="iconSize"
         :height="iconSize"
       >
-        <div :style="{ width: iconSize + 'px', height: iconSize + 'px', display: 'flex', alignItems: 'center', justifyContent: 'center' }">
+        <div :style="{ width: iconSize + 'px', height: iconSize + 'px', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }">
           <component :is="iconComponent" :size="iconSize" :color="node.style.textColor" />
         </div>
       </foreignObject>
@@ -130,7 +140,7 @@ function onHandleMouseUp(handleId: string) {
         :width="node.width * 0.8"
         :height="node.height * 0.6"
       >
-        <div :style="{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }">
+        <div :style="{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', pointerEvents: 'none' }">
           <div v-html="node.svgContent" :style="{ width: '100%', height: '100%' }"></div>
         </div>
       </foreignObject>
@@ -141,6 +151,7 @@ function onHandleMouseUp(handleId: string) {
       :key="handle.id"
       :handle="handle"
       :node-id="node.id"
+      @mouseup="($event) => onHandleMouseUp($event, handle.id)"
     />
     <NodeLabel :node="node" :offset-y="hasIcon ? iconSize * 0.4 + 4 : 0" />
     <NodeTooltip :node="node" :visible="isHovered" />

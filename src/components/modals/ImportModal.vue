@@ -25,6 +25,35 @@ function parseJSON(content: string): GraphDocument | null {
   return null
 }
 
+function parseSVG(content: string): GraphDocument | null {
+  try {
+    const parser = new DOMParser()
+    const doc = parser.parseFromString(content, 'image/svg+xml')
+    const graphData = doc.querySelector('metadata > graph-data, metadata graph-data')
+    if (graphData && graphData.textContent) {
+      const b64 = graphData.textContent.trim()
+      try {
+        const decoded = decodeURIComponent(escape(atob(b64)))
+        const json = JSON.parse(decoded)
+        if (json && json.id && Array.isArray(json.nodes) && Array.isArray(json.edges)) {
+          return json as GraphDocument
+        }
+      } catch {}
+    }
+    const m = content.match(/eyJ[A-Za-z0-9+/=]{40,}/)
+    if (m) {
+      try {
+        const decoded = decodeURIComponent(escape(atob(m[0])))
+        const json = JSON.parse(decoded)
+        if (json && json.id && Array.isArray(json.nodes) && Array.isArray(json.edges)) {
+          return json as GraphDocument
+        }
+      } catch {}
+    }
+  } catch {}
+  return null
+}
+
 function parseGraphML(content: string): GraphDocument | null {
   const parser = new DOMParser()
   const xml = parser.parseFromString(content, 'application/xml')
@@ -135,32 +164,41 @@ function parseDOT(content: string): GraphDocument | null {
   }
 }
 
+const RASTER_EXTS = new Set(['png', 'jpg', 'jpeg', 'webp', 'bmp', 'gif', 'pdf'])
+const RASTER_FRIENDLY_WARN =
+  '该格式（图片/PDF）是平面渲染结果，无法还原节点、边、分组等结构化数据。请使用 JSON、SVG、GraphML 或 DOT 格式；其中本编辑器导出的 SVG 可完整还原。'
+
 async function handleFile(file: File) {
   error.value = ''
+  const ext = file.name.split('.').pop()?.toLowerCase() || ''
+
+  if (RASTER_EXTS.has(ext)) {
+    error.value = RASTER_FRIENDLY_WARN
+    return
+  }
+
   const content = await file.text()
-  const ext = file.name.split('.').pop()?.toLowerCase()
   let doc: GraphDocument | null = null
 
   try {
     if (ext === 'json') {
       doc = parseJSON(content)
+    } else if (ext === 'svg') {
+      doc = parseSVG(content)
+      if (!doc) error.value = '该 SVG 中未找到本编辑器嵌入的图数据，请确认是由本编辑器导出的 SVG 文件。'
     } else if (ext === 'graphml') {
       doc = parseGraphML(content)
-    } else if (ext === 'dot') {
+    } else if (ext === 'dot' || ext === 'gv') {
       doc = parseDOT(content)
     } else {
-      try {
-        doc = parseJSON(content)
-      } catch {
-        doc = parseGraphML(content)
-      }
+      try { doc = parseJSON(content) } catch { try { doc = parseSVG(content) } catch { try { doc = parseGraphML(content) } catch {} } }
     }
 
     if (doc) {
       graphStore.setDocument(doc)
       close()
-    } else {
-      error.value = '无法解析文件'
+    } else if (!error.value) {
+      error.value = '无法解析文件，请确认格式正确（支持 JSON / SVG / GraphML / DOT）'
     }
   } catch (e) {
     error.value = '解析失败: ' + (e instanceof Error ? e.message : String(e))
@@ -201,13 +239,13 @@ function onDrop(e: DragEvent) {
       >
         <Upload :size="32" class="mx-auto mb-2" :style="{ color: themeStore.themeColors.textSecondary }" />
         <div class="text-sm mb-2" :style="{ color: themeStore.themeColors.textPrimary }">拖拽文件到此处</div>
-        <div class="text-xs mb-3" :style="{ color: themeStore.themeColors.textSecondary }">支持 JSON, GraphML, DOT 格式</div>
+        <div class="text-xs mb-3" :style="{ color: themeStore.themeColors.textSecondary }">支持 JSON, SVG, GraphML, DOT/GV（SVG 需为本编辑器导出的文件）</div>
         <label
           class="inline-block px-4 py-1.5 text-sm rounded cursor-pointer"
           :style="{ background: themeStore.themeColors.accent, color: '#fff' }"
         >
           选择文件
-          <input type="file" accept=".json,.graphml,.dot" class="sr-only" @change="onFileInput" />
+          <input type="file" accept=".json,.svg,.graphml,.dot,.gv" class="sr-only" @change="onFileInput" />
         </label>
       </div>
 
